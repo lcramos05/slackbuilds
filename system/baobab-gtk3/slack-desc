@@ -1,0 +1,19 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description.
+# Line up the first '|' above the ':' following the base package name, and
+# the '|' on the right side marks the last column you can put a character in.
+# You must make exactly 11 lines for the formatting to be correct.  It's also
+# customary to leave one space after the ':' except on otherwise blank lines.
+
+           |-----handy-ruler------------------------------------------------------|
+baobab-gtk3: baobab (GNOME Disk Usage Analyzer)
+baobab-gtk3:
+baobab-gtk3: Baobab is a simple application which can scan either specific folders
+baobab-gtk3: (local or remote) or volumes and give a graphical representation
+baobab-gtk3: including each directory size or percentage in the branch. It also
+baobab-gtk3: auto-detects any mounted/unmounted device.
+baobab-gtk3:
+baobab-gtk3: This is the version designed for GNOME 3.
+baobab-gtk3:
+baobab-gtk3: For more information, visit:
+baobab-gtk3: https://wiki.gnome.org/Apps/DiskUsageAnalyzer
