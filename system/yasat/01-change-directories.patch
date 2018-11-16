@@ -1,0 +1,12 @@
+diff -urpN a/Makefile b/Makefile
+--- a/Makefile	2012-05-07 06:21:24.000000000 -0300
++++ b/Makefile	2018-11-16 17:26:02.882292092 -0200
+@@ -1,6 +1,6 @@
+ DESTDIR=
+-PREFIX=/usr/local/
+-SYSCONFDIR=${PREFIX}/etc
++PREFIX=/usr/
++SYSCONFDIR=/etc
+ DATADIR=${PREFIX}/share
+ MANDIR=${PREFIX}/share/man/man8/
+ #http://www.freebsd.org/doc/en/books/porters-handbook/porting-prefix.html

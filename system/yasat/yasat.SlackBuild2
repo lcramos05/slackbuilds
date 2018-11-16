@@ -1,0 +1,214 @@
+#!/bin/sh
+
+# Slackware build script for yasat
+
+# Copyright 2018, Luiz Ramos, Sao Paulo, Brazil
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR IMPLIED
+#  WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+#  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO
+#  EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+#  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+#  OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+#  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+#  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+#  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+PRGNAM=yasat			# replace with name of program
+VERSION=${VERSION:-839}		# replace with version of program
+BUILD=${BUILD:-1lr}
+TAG=${TAG:-_SBo}			# the "_SBo" is required
+UPSTREAM_NAME=${UPSTREAM_NAME:-$PRGNAM}
+UPSTREAM_VERSION=${UPSTREAM_VERSION:-$VERSION}
+
+# Automatically determine the architecture we're building on:
+if [ -z "$ARCH" ]; then
+  case "$( uname -m )" in
+    i?86) ARCH=i486 ;;
+    arm*) ARCH=arm ;;
+# Unless $ARCH is already set, use uname -m for all other archs:
+       *) ARCH=$( uname -m ) ;;
+  esac
+fi
+
+CWD=$(pwd)
+TMP=${TMP:-/tmp/SBo}		# For consistency's sake, use this
+PKG=$TMP/package-$PRGNAM
+OUTPUT=${OUTPUT:-/tmp}		# Drop the package in /tmp
+
+if [ "$ARCH" = "i486" ]; then
+  SLKCFLAGS="-O2 -march=i486 -mtune=i686"
+  LIBDIRSUFFIX=""
+elif [ "$ARCH" = "i686" ]; then
+  SLKCFLAGS="-O2 -march=i686 -mtune=i686"
+  LIBDIRSUFFIX=""
+elif [ "$ARCH" = "x86_64" ]; then
+  SLKCFLAGS="-O2 -fPIC"
+  LIBDIRSUFFIX="64"
+else
+  SLKCFLAGS="-O2"
+  LIBDIRSUFFIX=""
+fi
+
+set -e # Exit on most errors
+
+_untar() {
+	_p=$(pwd)
+	rm -rf $PKG
+	mkdir -p $TMP $PKG $OUTPUT
+	cd $TMP
+	rm -rf $PRGNAM-$VERSION
+	local _tarbasename="$CWD/$UPSTREAM_NAME-$UPSTREAM_VERSION"
+	tar xvf "${_tarbasename}.tar.gz" 2>/dev/null || \
+		tar xvf "${_tarbasename}.tar.bz2" 2>/dev/null || \
+		tar xvf "${_tarbasename}.tar.xz" 2>/dev/null || \
+		unzip "${_tarbasename}.zip" 2>/dev/null || \
+		(echo "${_tarbasename}.{tar.gz,tar.bz2,tar.xz,zip} not found" && false)
+	# specific
+	mv "$UPSTREAM_NAME" "$UPSTREAM_NAME-$UPSTREAM_VERSION"
+	[ "$UPSTREAM_NAME" != "$PRGNAM" -a -d "$UPSTREAM_NAME-$UPSTREAM_VERSION" ] &&
+		mv "$UPSTREAM_NAME-$UPSTREAM_VERSION" "$PRGNAM-$UPSTREAM_VERSION"
+	[ "$UPSTREAM_VERSION" != "$VERSION" ] &&
+		mv $PRGNAM-$UPSTREAM_VERSION $PRGNAM-$VERSION
+	cd $PRGNAM-$VERSION
+	chown -R root:root .
+	find . \
+	 \( -perm 777 -o -perm 775 -o -perm 711 -o -perm 555 -o -perm 511 \) \
+	 -exec chmod 755 {} \; -o \
+	 \( -perm 666 -o -perm 664 -o -perm 600 -o -perm 444 -o -perm 440 -o \
+	    -perm 400 \) \
+	 -exec chmod 644 {} \;
+	cd "$_p"
+}
+
+_patch() {
+	_p=$(pwd)
+	cd "$TMP/$PRGNAM-$VERSION"
+	# Apply patches
+	for _q in $(ls $CWD/*.patch 2>/dev/null); do
+		patch -p1 -i $_q
+	done
+
+	cd "$_p"
+}
+
+_build() {
+	_p=$(pwd)
+	cd "$TMP/$PRGNAM-$VERSION"
+
+	## Your application will probably need different configure flags;
+	## these are provided as an example only.
+	## Be sure to build only shared libraries unless there's some need for
+	## static.
+	#CFLAGS="$SLKCFLAGS" \
+	#CPPFLAGS="" \
+	#CXXFLAGS="$SLKCFLAGS" \
+	#./configure \
+	#  --prefix=/usr \
+	#  --libdir=/usr/lib${LIBDIRSUFFIX} \
+	#  --sysconfdir=/etc \
+	#  --localstatedir=/var \
+	#  --mandir=/usr/man \
+	#  --docdir=/usr/doc/$PRGNAM-$VERSION \
+	#  --enable-shared \
+	#  --enable-static \
+	#  --build=$ARCH-slackware-linux
+	
+	## Compile the application
+	#make
+
+	cd "$_p"
+}
+
+_pack() {
+	# Install the application into the $PKG directory
+	_p=$(pwd)
+	cd "$TMP/$PRGNAM-$VERSION"
+
+	( cd .; make install DESTDIR=$PKG && make installman DESTDIR=$PKG  )
+	
+	cd ..
+
+	## Copy desktop file
+	#mkdir -p $PKG/usr/share/applications
+	#install -m 644 -o root -g root -t $PKG/usr/share/applications "$CWD/$PRGNAM.desktop"
+
+	# Strip binaries and libraries - this can be done with 
+	# 'make install-strip'
+	# in many source trees, and that's usually acceptable, if not, use this:
+	find $PKG -print0 | xargs -0 file \
+	  | grep -e "executable" -e "shared object" | grep ELF \
+	  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+
+	# Compress man pages
+	# If the man pages are installed to /usr/share/man instead, you'll
+	# need to move them manually.
+	if [ -d "$PKG/usr/man" ]; then
+	  find $PKG/usr/man -type f -exec gzip -9 -f {} \;
+	  for i in $( find $PKG/usr/man -type l ) ; do \
+	    ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
+	fi
+	
+	# Compress info pages and remove the package's dir file
+	# If no info pages are installed by the software, don't leave this
+	# in the script
+	if [ -d "$PKG/usr/info" ]; then
+	  rm -f $PKG/usr/info/dir
+	  gzip -9 -f $PKG/usr/info/*.info*
+	fi
+
+	# Remove perllocal.pod and other special files that don't need to be
+	# installed, as they will overwrite what's already on the system.
+        # If this is not needed, remove it from the script.
+	find $PKG -name perllocal.pod -o -name ".packlist" -o -name "*.bs" | \
+	  xargs rm -f || true
+
+	# Copy program documentation into the package
+	# The included documentation varies from one application to another,
+	# so be sure to adjust your script as needed
+	_usdoc="$PKG/usr/share/doc/$PRGNAM-$VERSION"
+	[ -d "${_usdoc}" ] || mkdir -p "${_usdoc}"
+	for _f in BUGS CHANGELOG COPYRIGHT LICENCE README; do
+		install -m 644 -t "${_usdoc}" "$TMP/$PRGNAM-$VERSION/${_f}"
+	done
+
+	# Also, include the SlackBuild script in the documentation directory
+	mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION
+	cat $CWD/$PRGNAM.SlackBuild > \
+	  $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+	cat $CWD/$PRGNAM.info > \
+	  $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.info
+
+	# Copy the slack-desc (and a custom doinst.sh if necessary)
+	# into ./install
+	mkdir -p $PKG/install
+	cat $CWD/slack-desc > $PKG/install/slack-desc
+	cat $CWD/doinst.sh > $PKG/install/doinst.sh
+
+	# Make the package; be sure to leave it in $OUTPUT
+	# If package symlinks need to be created during install *before*
+	# your custom contents of doinst.sh runs, then add the -p switch to
+	# the makepkg command below -- see makepkg(8) for details
+	cd $PKG
+	/sbin/makepkg -l y -c n \
+	  $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-tgz}
+	cd "$_p"
+}
+
+
+case "${TASK}" in
+	untar)	_untar;;
+	patch)	_patch;;
+	build)	_build;;
+	pack)	_pack;;
+	*)	_untar && _patch && _build && _pack;;
+esac
+
